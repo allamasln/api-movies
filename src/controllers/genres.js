@@ -23,6 +23,8 @@ const update = async (req, res) => {
 const remove = async (req, res) => {
 	const genre = await Genre.findByIdAndDelete(req.params.genreId)
 
+	if (!genre) return res.status(404).json({ msg: 'Genero no existe' })
+
 	res.json(genre)
 }
 

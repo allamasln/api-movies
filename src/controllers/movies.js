@@ -1,13 +1,23 @@
 const { Movie } = require('../models/movie')
 
-const create = async (req, res) => {
-	const newMovie = await Movie.create(req.body)
-
-	res.json(newMovie)
-}
-
 const getAll = async (req, res) => {
-	const movies = await Movie.find().populate('genres')
+	const { page = 1, search, genre, order } = req.query
+
+	const query = {}
+	let sort = {}
+
+	const pageSize = 2
+	const offset = (page - 1) * pageSize
+	//if (genre) query['genres'] = { $in: genre }
+	if (search) query.title = { $regex: search }
+
+	if (order) sort[order] = 1
+
+	const movies = await Movie.find(query)
+		.populate('genres')
+		.sort(sort)
+		.limit(pageSize)
+		.skip(offset)
 
 	res.json(movies)
 }
@@ -16,6 +26,13 @@ const getById = async (req, res) => {
 	const movie = await Movie.findById(req.params.movieId).populate('genres')
 
 	res.json(movie)
+}
+
+const create = async (req, res) => {
+	console.log(req.user)
+	const newMovie = await Movie.create(req.body)
+
+	res.json(newMovie)
 }
 
 const update = async (req, res) => {
@@ -33,9 +50,9 @@ const remove = async (req, res) => {
 }
 
 module.exports = {
-	create,
 	getAll,
 	getById,
+	create,
 	update,
 	remove,
 }

@@ -6,7 +6,7 @@ module.exports = function (app) {
 	app.use(json())
 	app.use(morgan('dev'))
 
-	// app.use('/api/users', require('./routes/users'))
+	app.use('/api/users', require('../routes/users'))
 
 	app.use('/api/movies', require('../routes/movies'))
 	app.use('/api/genres', require('../routes/genres'))

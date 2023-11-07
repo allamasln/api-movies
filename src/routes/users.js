@@ -1,47 +1,67 @@
-const crypto = require('crypto')
+const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+
 const { Router } = require('express')
+const { body, validationResult } = require('express-validator')
+
+const { User } = require('../models/user')
 
 const router = Router()
 
-const users = {}
-
-router.get('/', (req, res) => {
-	res.send(users)
-})
-
-router.post('/register', (req, res) => {
+router.post('/login', async (req, res) => {
 	const { username, password: passwordPlainText } = req.body
 
-	if (users[username]) return res.status(400).send('Intentelo de nuevo')
+	const user = await User.findOne({ username })
 
-	const hash = crypto.createHash('sha1').update(passwordPlainText).digest('hex')
-	console.log(hash)
+	if (!user)
+		return res.status(400).json({ msg: 'Usuario o contraseña incorrecto' })
 
-	users[username] = hash
-	res.send('Usuario registrado')
+	const isValidUser = await bcrypt.compare(passwordPlainText, user.password)
+
+	if (!isValidUser)
+		return res.status(400).json({ msg: 'Usuario o contraseña incorrecto' })
+
+	const token = jwt.sign(
+		{ id: user._id, isAdmin: user.isAdmin },
+		process.env.privateKey
+	)
+
+	res.setHeader('x-auth-token', token)
+	res.json({ msg: 'Usuario logueado' })
 })
 
-router.post('/login', (req, res) => {
-	const { username, password: passwordPlainText } = req.body
+router.post(
+	'/register',
+	body('email').custom(async (email) => {
+		const user = await User.findOne({ email })
 
-	if (!users[username])
-		return res.status(400).send('Usuario o contraseña no coinciden')
+		if (user) throw new Error('Vuelve a intentarlo más tarde')
+	}),
+	async (req, res) => {
+		const { username, password: passwordPlainText, isAdmin, ...rest } = req.body
 
-	const hash = crypto.createHash('sha1').update(passwordPlainText).digest('hex')
-	console.log(hash, users[username])
+		const user = await User.findOne({ username })
+		if (user)
+			return res.status(400).json({ msg: 'Vuelve a intentarlo más tarde' })
 
-	if (users[username] !== hash)
-		return res.status(400).send('Usuario o contraseña no coinciden')
+		const { errors } = validationResult(req)
 
-	req.session.user = username
+		if (errors.length)
+			return res.status(400).send({ msg: 'Vuelve a intentarlo más tarde' })
 
-	res.send('Usuario logueado')
-})
+		const salt = await bcrypt.genSalt(10)
+		const password = await bcrypt.hash(passwordPlainText, salt)
 
-router.delete('/logout', (req, res) => {
-	req.session.destroy()
+		const newUser = await User.create({ username, password, ...rest })
 
-	res.send('Sesión cerrada')
-})
+		const token = jwt.sign(
+			{ id: newUser._id, isAdmin: newUser.isAdmin },
+			process.env.privateKey
+		)
+
+		res.setHeader('x-auth-token', token)
+		res.json({ msg: 'Usuario registrado' })
+	}
+)
 
 module.exports = router
