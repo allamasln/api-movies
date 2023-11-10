@@ -21,6 +21,7 @@ router.put(
 	validate,
 	genreController.update
 )
+
 router.delete(
 	'/:genreId',
 	auth,

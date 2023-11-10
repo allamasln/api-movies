@@ -1,23 +1,51 @@
 const { Movie } = require('../models/movie')
-
+const mongoose = require('mongoose')
 const getAll = async (req, res) => {
-	const { page = 1, search, genre, order } = req.query
+	let { page = 1, search, genre, order } = req.query
 
 	const query = {}
 	let sort = {}
 
-	const pageSize = 2
+	const pageSize = 20
 	const offset = (page - 1) * pageSize
-	//if (genre) query['genres'] = { $in: genre }
+
 	if (search) query.title = { $regex: search }
+	let ey
+	if (genre) {
+		if (typeof genre === 'string') genre = [genre]
+
+		// query['genres'] = {
+		// 	$in: genre.map((item) => new mongoose.Types.ObjectId(item)),
+		// }
+
+		ey = [
+			{
+				$unwind: '$genres',
+			},
+			{
+				$match: {
+					genres: {
+						$in: genre.map((item) => new mongoose.Types.ObjectId(item)),
+					},
+				},
+			},
+			{
+				$lookup: {
+					from: 'genres', // Nombre de la colección de géneros
+					localField: 'genres',
+					foreignField: '_id',
+					as: 'genreDetails',
+				},
+			},
+		]
+	}
 
 	if (order) sort[order] = 1
 
-	const movies = await Movie.find(query)
-		.populate('genres')
-		.sort(sort)
-		.limit(pageSize)
-		.skip(offset)
+	// const movies = await Movie.find(query).sort(sort).limit(pageSize).skip(offset)
+
+	const movies = await Movie.aggregate(ey)
+	console.log(movies)
 
 	res.json(movies)
 }
