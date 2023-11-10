@@ -10,41 +10,15 @@ const getAll = async (req, res) => {
 	const offset = (page - 1) * pageSize
 
 	if (search) query.title = { $regex: search }
-	let ey
+
 	if (genre) {
 		if (typeof genre === 'string') genre = [genre]
-
-		// query['genres'] = {
-		// 	$in: genre.map((item) => new mongoose.Types.ObjectId(item)),
-		// }
-
-		ey = [
-			{
-				$unwind: '$genres',
-			},
-			{
-				$match: {
-					genres: {
-						$in: genre.map((item) => new mongoose.Types.ObjectId(item)),
-					},
-				},
-			},
-			{
-				$lookup: {
-					from: 'genres', // Nombre de la colección de géneros
-					localField: 'genres',
-					foreignField: '_id',
-					as: 'genreDetails',
-				},
-			},
-		]
 	}
 
 	if (order) sort[order] = 1
 
-	// const movies = await Movie.find(query).sort(sort).limit(pageSize).skip(offset)
+	const movies = await Movie.find(query).sort(sort).limit(pageSize).skip(offset)
 
-	const movies = await Movie.aggregate(ey)
 	console.log(movies)
 
 	res.json(movies)
