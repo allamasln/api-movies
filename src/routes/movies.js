@@ -27,7 +27,7 @@ router.get(
 	movieController.getById
 )
 
-router.post('/', auth, movieValidation, validate, movieController.create)
+router.post('/', movieValidation, validate, movieController.create)
 router.put(
 	'/:movieId',
 	auth,
