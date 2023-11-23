@@ -1,5 +1,6 @@
 require('express-async-errors')
 const { json } = require('express')
+const cors = require('cors')
 const morgan = require('morgan')
 const helmet = require('helmet')
 const compression = require('compression')
@@ -9,6 +10,7 @@ module.exports = function (app) {
 	app.use(compression())
 	app.use(json())
 	app.use(morgan('dev'))
+	app.use(cors())
 
 	app.use('/api/users', require('../routes/users'))
 
