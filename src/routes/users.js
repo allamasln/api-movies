@@ -27,6 +27,7 @@ router.post('/login', async (req, res) => {
 	)
 
 	res.setHeader('x-auth-token', token)
+	res.setHeader('Access-Control-Expose-Headers', 'x-auth-token')
 	res.json({ msg: 'Usuario logueado' })
 })
 
@@ -60,6 +61,7 @@ router.post(
 		)
 
 		res.setHeader('x-auth-token', token)
+		res.setHeader('Access-Control-Expose-Headers', 'x-auth-token')
 		res.json({ msg: 'Usuario registrado' })
 	}
 )
